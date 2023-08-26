@@ -1,2 +1,2 @@
 # CavernsOfAsmodeus
-game about shooting aliens in a tank
+game about shooting aliens/demons with a tank
