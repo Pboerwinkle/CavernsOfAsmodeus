@@ -61,9 +61,12 @@ def detectCollision(trjctryPP, trjctrySI, staticPP, staticSI, radius):
 		if isOnLine(staticPP, CPintrsctCent):
 			return [x, y]
 		else:
+			if (getSqrDist(staticPP[1], trjctryPP[0]) < getSqrDist(staticPP[0], trjctryPP[0])):
+				CPStatic1,CPStatic2 = CPStatic2,CPStatic1
+				staticPP[0],staticPP[1] = staticPP[1],staticPP[0]
 			dist1 = getSqrDist(CPStatic1, staticPP[0])
 			dist2 = getSqrDist(CPStatic2, staticPP[1])
-			if dist1 > dist2:
+			if dist1 > radius**2:
 				usedDist = dist2
 				usedPnt = CPStatic2
 			else:
