@@ -11,7 +11,7 @@ def lineLineIntrsct(line1, line2):
 
 def getClosestPoint(line, point):
 	if line[0] == 0:
-		slp = 100000
+		return [point[0], line[1]]
 	else:
 		slp = -1/line[0]
 	yIntrcpt = slp * (-1*point[0]) + point[1]
@@ -61,9 +61,12 @@ def detectCollision(trjctryPP, trjctrySI, staticPP, staticSI, radius):
 		if isOnLine(staticPP, CPintrsctCent):
 			return [x, y]
 		else:
+			if (getSqrDist(staticPP[1], trjctryPP[0]) < getSqrDist(staticPP[0], trjctryPP[0])):
+				CPStatic1,CPStatic2 = CPStatic2,CPStatic1
+				staticPP[0],staticPP[1] = staticPP[1],staticPP[0]
 			dist1 = getSqrDist(CPStatic1, staticPP[0])
 			dist2 = getSqrDist(CPStatic2, staticPP[1])
-			if dist1 > dist2:
+			if dist1 > radius**2:
 				usedDist = dist2
 				usedPnt = CPStatic2
 			else:
