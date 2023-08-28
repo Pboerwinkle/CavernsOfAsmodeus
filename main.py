@@ -56,13 +56,23 @@ def getEndPoint(angle, speed):
 	y = speed*math.sin(angle)
 	return [x, y]
 
-playerPics = {
-	"chassis": pygame.transform.scale(pygame.image.load("assets/chassisSS.png"), (160, 80))}
+spriteSheet = pygame.image.load("assets/Sprites.png")
+miniSheets = {
+	"chassis": spriteSheet.subsurface([0, 0, 26, 28]),
+	"sideTreads": spriteSheet.subsurface([0, 28, 36, 32])}
+animStates = {"leftTread": [0, 3], "rightTread": [0, 3]}
 playerConst = {"turnSpeed": 0.03, "speed": 1.5, "radius": 10, "camElev": 1.5, "zoomFactor": 2}
 playerVars = {
 	"chassisAngle": 0,
 	"pos": list(halfScreen),
 	"gunAngle": 0}
+
+playerTracks = numpy.zeros((1000, 2, 2))
+
+trackLeft = getEndPoint(playerVars["chassisAngle"]+math.pi/2, 8)
+playerTracks[:, 0] = [playerVars["pos"][0]+trackLeft[0], playerVars["pos"][1]+trackLeft[1]]
+trackRight = getEndPoint(playerVars["chassisAngle"]-math.pi/2, 8)
+playerTracks[:, 1] = [playerVars["pos"][0]+trackRight[0], playerVars["pos"][1]+trackRight[1]]
 
 controls = {"advance":
 				{"keys": [119, 1073741906],
@@ -103,8 +113,12 @@ while True:
 						thisCont["state"] = False
 
 	if controls["left"]["state"]:
+		animStates["leftTread"][0]-=0.2
+		animStates["rightTread"][0]+=0.2
 		playerVars["chassisAngle"] -= playerConst["turnSpeed"]
 	if controls["right"]["state"]:
+		animStates["leftTread"][0]+=0.2
+		animStates["rightTread"][0]-=0.2
 		playerVars["chassisAngle"] += playerConst["turnSpeed"]
 
 	if playerVars["chassisAngle"] > math.pi*2:
@@ -119,11 +133,15 @@ while True:
 	newPos = playerVars["pos"].copy()
 	changedPos = False
 	if controls["advance"]["state"]:
+		animStates["leftTread"][0]+=0.2
+		animStates["rightTread"][0]+=0.2
 		difference = getEndPoint(playerVars["chassisAngle"], playerConst["speed"])
 		newPos[0] += difference[0]
 		newPos[1] += difference[1]
 		changedPos = True
 	if controls["reverse"]["state"]:
+		animStates["leftTread"][0]-=0.2
+		animStates["rightTread"][0]-=0.2
 		difference = getEndPoint(playerVars["chassisAngle"]+math.pi, playerConst["speed"])
 		newPos[0] += difference[0]
 		newPos[1] += difference[1]
@@ -152,16 +170,46 @@ while True:
 		oldPos = playerVars["pos"].copy()
 		playerVars["pos"] = closestPoint
 
+	for anim in animStates:
+		thisAnim = animStates[anim]
+		if thisAnim[0] > thisAnim[1]:
+			thisAnim[0] -= thisAnim[1]
+		if thisAnim[0] < 0:
+			thisAnim[0] += thisAnim[1]
 
-	newPoints = translate([-playerVars["pos"][0], -playerVars["pos"][1]], allPoints)
-	newPoints = rotate(-playerVars["chassisAngle"]-math.pi/2, newPoints)
+	transDiff = [-playerVars["pos"][0], -playerVars["pos"][1]]
+	newPoints = translate(transDiff, allPoints)
+	rotAngle = -playerVars["chassisAngle"]-math.pi/2
+	newPoints = rotate(rotAngle, newPoints)
 	newPoints = dilate(playerConst["zoomFactor"], newPoints)
 	highPoints = numpy.copy(newPoints)
 	highPoints = magnify(playerConst["camElev"], highPoints)
-	newPoints = translate([halfScreen[0], halfScreen[1]], newPoints)
+	newPoints = translate(halfScreen, newPoints)
 	highPoints = translate([halfScreen[0], halfScreen[1]], highPoints)
 
-	screen.fill((63, 43, 32))
+	###
+
+	playerTracks = numpy.roll(playerTracks, 1, axis = 0)
+
+	trackLeft = getEndPoint(playerVars["chassisAngle"]+math.pi/2, 7)
+	playerTracks[0, 0] = [playerVars["pos"][0]+trackLeft[0], playerVars["pos"][1]+trackLeft[1]]
+	trackRight = getEndPoint(playerVars["chassisAngle"]-math.pi/2, 7)
+	playerTracks[0, 1] = [playerVars["pos"][0]+trackRight[0], playerVars["pos"][1]+trackRight[1]]
+
+	newTracks1 = translate(transDiff, playerTracks[:, 0])
+	newTracks1 = rotate(rotAngle, newTracks1)
+	newTracks1 = dilate(playerConst["zoomFactor"], newTracks1)
+	newTracks1 = translate(halfScreen, newTracks1)
+
+	newTracks2 = translate(transDiff, playerTracks[:, 1])
+	newTracks2 = rotate(rotAngle, newTracks2)
+	newTracks2 = dilate(playerConst["zoomFactor"], newTracks2)
+	newTracks2 = translate(halfScreen, newTracks2)
+
+	screen.fill((83, 63, 52))
+
+	pygame.draw.lines(screen, (63, 43, 32), False, newTracks1, width=3)
+	pygame.draw.lines(screen, (63, 43, 32), False, newTracks2, width=3)
 
 	for edge in mapData["edges"]:
 		thisEdge = [newPoints[edge[0]], newPoints[edge[1]]]
@@ -181,6 +229,11 @@ while True:
 			continue
 		pygame.gfxdraw.filled_polygon(screen, highPoints[cell], (30, 16, 8))
 
-	pygame.gfxdraw.circle(screen, round(halfScreen[0]), round(halfScreen[1]), round(playerConst["radius"]*playerConst["zoomFactor"]), (0, 0, 255))
+	leftTread = miniSheets["sideTreads"].subsurface([round(animStates["leftTread"][0])*9, 0, 9, 32])
+	rightTread = miniSheets["sideTreads"].subsurface([round(animStates["rightTread"][0])*9, 0, 9, 32])
+
+	screen.blit(leftTread, (round(halfScreen[0])-18, round(halfScreen[1])-16))
+	screen.blit(rightTread, (round(halfScreen[0])+9, round(halfScreen[1])-16))
+	screen.blit(miniSheets["chassis"], (round(halfScreen[0])-13, round(halfScreen[1])-13))
 
 	pygame.display.flip()
