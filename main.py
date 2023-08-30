@@ -133,15 +133,15 @@ while True:
 	newPos = playerVars["pos"].copy()
 	changedPos = False
 	if controls["advance"]["state"]:
-		animStates["leftTread"][0]+=0.2
-		animStates["rightTread"][0]+=0.2
+		animStates["leftTread"][0]+=0.3
+		animStates["rightTread"][0]+=0.3
 		difference = getEndPoint(playerVars["chassisAngle"], playerConst["speed"])
 		newPos[0] += difference[0]
 		newPos[1] += difference[1]
 		changedPos = True
 	if controls["reverse"]["state"]:
-		animStates["leftTread"][0]-=0.2
-		animStates["rightTread"][0]-=0.2
+		animStates["leftTread"][0]-=0.3
+		animStates["rightTread"][0]-=0.3
 		difference = getEndPoint(playerVars["chassisAngle"]+math.pi, playerConst["speed"])
 		newPos[0] += difference[0]
 		newPos[1] += difference[1]
